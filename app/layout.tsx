@@ -27,7 +27,12 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="flex h-dvh flex-col overflow-hidden">{children}</body>
+      <body className="flex h-dvh flex-col overflow-hidden">
+        {children}
+        <footer className="shrink-0 border-t border-black/10 py-2 text-center text-xs text-foreground/40 dark:border-white/15">
+          Multiplayer Channels — ローカルLLM × 共有チャンネル
+        </footer>
+      </body>
     </html>
   );
 }
