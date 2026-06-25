@@ -5,8 +5,10 @@ import { streamChat, type ChatMessage } from "@/lib/llm/client";
 import { embedText } from "@/lib/llm/embed";
 import { mockStream } from "@/lib/llm/mock";
 import { parseMemoryCommand } from "@/lib/memory/commands";
+import { scheduleExtraction } from "@/lib/memory/extract";
 import { memoryEnabled, memoryStore } from "@/lib/memory/index";
 import { recallForTurn } from "@/lib/memory/recall";
+import { scheduleSummarize } from "@/lib/memory/summarize";
 import type { MemoryItem } from "@/lib/memory/types";
 import { store } from "@/lib/store";
 import type { Message } from "@/lib/store/types";
@@ -86,6 +88,14 @@ export async function runAssistantTurn(channelId: string): Promise<void> {
   hub.endStream(channelId);
   hub.publish(channelId, { type: "message", message });
   hub.setStatus(channelId, "idle", runId);
+
+  // 背景の学習ジョブ（応答配信はブロックしない）。
+  // - 自動抽出: extractEveryNTurns ごとに事実/好み/決定を抽出
+  // - 会話要約: 履歴が summaryThreshold を超えたらコンテキストを圧縮
+  if (memoryEnabled) {
+    scheduleExtraction(channelId);
+    scheduleSummarize(channelId);
+  }
 }
 
 const AMBIENT_SYSTEM_PROMPT =
