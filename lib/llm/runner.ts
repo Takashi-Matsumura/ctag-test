@@ -73,3 +73,54 @@ export async function runAssistantTurn(channelId: string): Promise<void> {
   hub.publish(channelId, { type: "message", message });
   hub.setStatus(channelId, "idle", runId);
 }
+
+const AMBIENT_SYSTEM_PROMPT =
+  "あなたはチームの共有チャットを見守っているアシスタントです。" +
+  "直近の会話を読み、あなたが今“自発的に”一言加えることで本当に役立つ場合だけ発言します" +
+  "（例: 未解決の質問に答える、論点を一言で整理する、忘れられたタスクを思い出させる）。" +
+  "特に役立つことが無い・ただの雑談・すでに解決済みなら、必ず「[silent]」とだけ返してください。" +
+  "発言する場合は日本語で1〜2文、押し付けがましくならないよう簡潔に。";
+
+/**
+ * アンビエント（自発）ターン。
+ * トークンは配信せずに一旦全文を生成し、「役立つ」と判断したときだけ
+ * 確定メッセージとして配信する（[silent] や空なら何もしない＝静かに見送る）。
+ * @returns 実際に発言したら true。
+ */
+export async function runAmbientTurn(channelId: string): Promise<boolean> {
+  const history = await store.getMessages(channelId);
+  if (history.length === 0) return false;
+
+  const chat: ChatMessage[] = [
+    { role: "system", content: AMBIENT_SYSTEM_PROMPT },
+    ...history.map((m) => ({
+      role: m.role,
+      content: m.role === "user" ? `${m.author}: ${m.content}` : m.content,
+    })),
+  ];
+
+  const generate = env.llmDriver === "mock" ? mockStream : streamChat;
+  let text = "";
+  try {
+    for await (const delta of generate(chat)) text += delta;
+  } catch {
+    return false; // アンビエントはエラー時は黙る
+  }
+
+  const trimmed = text.trim();
+  if (trimmed === "" || /\[silent\]/i.test(trimmed)) return false; // 見送り
+
+  const message = {
+    id: newId("msg"),
+    channelId,
+    role: "assistant" as const,
+    author: "assistant",
+    content: trimmed,
+    createdAt: Date.now(),
+    status: "complete" as const,
+    ambient: true,
+  };
+  await store.appendMessage(message);
+  hub.publish(channelId, { type: "message", message });
+  return true;
+}

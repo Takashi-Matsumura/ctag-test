@@ -9,6 +9,7 @@ export interface StreamState {
   streaming: { runId: string; text: string } | null;
   status: AssistantStatus;
   participants: string[];
+  ambient: boolean;
   error: string | null;
   connected: boolean;
 }
@@ -37,6 +38,7 @@ function reducer(state: StreamState, action: Action): StreamState {
         streaming: event.streaming,
         status: event.status,
         participants: event.participants,
+        ambient: event.ambient,
         error: null,
       };
     case "message": {
@@ -60,6 +62,8 @@ function reducer(state: StreamState, action: Action): StreamState {
     }
     case "presence":
       return { ...state, participants: event.participants };
+    case "ambient":
+      return { ...state, ambient: event.enabled };
     case "error":
       return { ...state, error: event.message };
     default:
@@ -84,6 +88,7 @@ export function useChannelStream(
     streaming: null,
     status: "idle",
     participants: [],
+    ambient: false,
     error: null,
     connected: false,
   });

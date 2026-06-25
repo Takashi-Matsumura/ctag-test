@@ -10,6 +10,8 @@ export interface Message {
   createdAt: number;
   /** assistant メッセージの生成状態。確定済みは "complete"。 */
   status?: "streaming" | "complete";
+  /** アンビエント（自発）発言なら true。UI でバッジ表示に使う。 */
+  ambient?: boolean;
 }
 
 export interface Channel {

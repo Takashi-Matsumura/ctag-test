@@ -1,3 +1,4 @@
+import { ambient } from "@/lib/ambient";
 import { hub } from "@/lib/hub";
 import { newId } from "@/lib/ids";
 import { lock } from "@/lib/lock";
@@ -66,6 +67,11 @@ export async function POST(
     if (lock.isBusy(id)) hub.setStatus(id, "queued");
     // リクエストの寿命から切り離して背景実行（投稿者がタブを閉じても継続）。
     void lock.run(id, () => runAssistantTurn(id));
+    // 明示的に呼ばれたので、保留中の自発判定は取り消す。
+    ambient.cancel(id);
+  } else {
+    // @なしの発言。アンビエントON なら一定の無発言後に自発判定を回す。
+    ambient.scheduleAfterHumanMessage(id);
   }
 
   return Response.json(

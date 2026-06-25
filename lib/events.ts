@@ -14,6 +14,7 @@ export type ChannelEvent =
       streaming: { runId: string; text: string } | null;
       status: AssistantStatus;
       participants: string[];
+      ambient: boolean;
     }
   /** 確定したメッセージ1件（user 発話 / assistant 完了）。 */
   | { type: "message"; message: Message }
@@ -23,5 +24,7 @@ export type ChannelEvent =
   | { type: "state"; status: AssistantStatus; runId?: string }
   /** 参加者一覧の変化。 */
   | { type: "presence"; participants: string[] }
+  /** アンビエント（自発発言）モードの ON/OFF。 */
+  | { type: "ambient"; enabled: boolean }
   /** 生成エラー等。 */
   | { type: "error"; message: string };
