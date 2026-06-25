@@ -29,8 +29,8 @@ export function PresenceBar({
         参加者 {participants.length}: {participants.join(", ") || "—"}
       </span>
       {statusLabel && (
-        <span className="ml-auto animate-pulse font-medium opacity-80">
-          アシスタント: {statusLabel}
+        <span className="ml-auto animate-pulse font-medium text-violet-600 dark:text-violet-300">
+          AIアシスタント: {statusLabel}
         </span>
       )}
     </div>
