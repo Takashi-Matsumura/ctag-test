@@ -10,6 +10,10 @@ export interface StreamState {
   status: AssistantStatus;
   participants: string[];
   ambient: boolean;
+  /** 直近の記憶追加/削除（トースト用）。 */
+  memoryNotice: { action: "added" | "removed"; text: string } | null;
+  /** 記憶イベントの連番。トースト要素の key にしてアニメーションを再生する。 */
+  memorySeq: number;
   error: string | null;
   connected: boolean;
 }
@@ -64,6 +68,12 @@ function reducer(state: StreamState, action: Action): StreamState {
       return { ...state, participants: event.participants };
     case "ambient":
       return { ...state, ambient: event.enabled };
+    case "memory":
+      return {
+        ...state,
+        memoryNotice: { action: event.action, text: event.item.text },
+        memorySeq: state.memorySeq + 1,
+      };
     case "error":
       return { ...state, error: event.message };
     default:
@@ -71,7 +81,7 @@ function reducer(state: StreamState, action: Action): StreamState {
   }
 }
 
-const EVENT_TYPES = ["snapshot", "message", "token", "state", "presence", "ambient", "error"] as const;
+const EVENT_TYPES = ["snapshot", "message", "token", "state", "presence", "ambient", "memory", "error"] as const;
 
 /**
  * チャンネルの SSE を購読し、単方向イベントから単一 state を構築する。
@@ -89,6 +99,8 @@ export function useChannelStream(
     status: "idle",
     participants: [],
     ambient: false,
+    memoryNotice: null,
+    memorySeq: 0,
     error: null,
     connected: false,
   });

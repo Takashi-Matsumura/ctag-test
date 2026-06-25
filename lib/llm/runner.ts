@@ -2,8 +2,14 @@ import { env } from "@/lib/env";
 import { hub } from "@/lib/hub";
 import { newId } from "@/lib/ids";
 import { streamChat, type ChatMessage } from "@/lib/llm/client";
+import { embedText } from "@/lib/llm/embed";
 import { mockStream } from "@/lib/llm/mock";
+import { parseMemoryCommand } from "@/lib/memory/commands";
+import { memoryEnabled, memoryStore } from "@/lib/memory/index";
+import { recallForTurn } from "@/lib/memory/recall";
+import type { MemoryItem } from "@/lib/memory/types";
 import { store } from "@/lib/store";
+import type { Message } from "@/lib/store/types";
 
 const SYSTEM_PROMPT =
   "あなたはチームの共有チャットルームにいる、フレンドリーなアシスタントです。" +
@@ -25,8 +31,16 @@ const SYSTEM_PROMPT =
 export async function runAssistantTurn(channelId: string): Promise<void> {
   const runId = newId("run");
   const history = await store.getMessages(channelId);
+
+  // 直近のユーザー発話が「覚えて/忘れて」コマンドなら、生成せず記憶操作で完結。
+  const lastUser = [...history].reverse().find((m) => m.role === "user");
+  if (lastUser && (await handleMemoryCommand(channelId, lastUser))) return;
+
+  // 関連記憶を想起して system prompt 末尾に注入（embedding 無効時は degrade）。
+  const recall = await recallForTurn(channelId, history);
+  const systemContent = recall.block ? `${SYSTEM_PROMPT}\n\n${recall.block}` : SYSTEM_PROMPT;
   const chat: ChatMessage[] = [
-    { role: "system", content: SYSTEM_PROMPT },
+    { role: "system", content: systemContent },
     ...history.map((m) => ({
       role: m.role,
       content: m.role === "user" ? `${m.author}: ${m.content}` : m.content,
@@ -91,8 +105,12 @@ export async function runAmbientTurn(channelId: string): Promise<boolean> {
   const history = await store.getMessages(channelId);
   if (history.length === 0) return false;
 
+  const recall = await recallForTurn(channelId, history);
+  const systemContent = recall.block
+    ? `${AMBIENT_SYSTEM_PROMPT}\n\n${recall.block}`
+    : AMBIENT_SYSTEM_PROMPT;
   const chat: ChatMessage[] = [
-    { role: "system", content: AMBIENT_SYSTEM_PROMPT },
+    { role: "system", content: systemContent },
     ...history.map((m) => ({
       role: m.role,
       content: m.role === "user" ? `${m.author}: ${m.content}` : m.content,
@@ -122,5 +140,81 @@ export async function runAmbientTurn(channelId: string): Promise<boolean> {
   };
   await store.appendMessage(message);
   hub.publish(channelId, { type: "message", message });
+  return true;
+}
+
+/** assistant 名義の確定メッセージを作って配信する（記憶操作の確認用）。 */
+async function postAssistantMessage(channelId: string, content: string): Promise<void> {
+  const message = {
+    id: newId("msg"),
+    channelId,
+    role: "assistant" as const,
+    author: "assistant",
+    content,
+    createdAt: Date.now(),
+    status: "complete" as const,
+  };
+  await store.appendMessage(message);
+  hub.publish(channelId, { type: "message", message });
+}
+
+/**
+ * 直近のユーザー発話が「覚えて/忘れて」コマンドなら記憶を操作し、確認を配信する。
+ * 操作したら true（呼び出し側は通常生成をスキップ）。コマンドでなければ false。
+ */
+async function handleMemoryCommand(channelId: string, trigger: Message): Promise<boolean> {
+  if (!memoryEnabled) return false;
+  const cmd = parseMemoryCommand(trigger.content);
+  if (!cmd) return false;
+
+  if (cmd.kind === "forget") {
+    // 当該チャンネルから見える記憶（global + このch）を新しい順に。
+    const pool = (await memoryStore.list())
+      .filter((m) => m.scope === "global" || m.channelId === channelId)
+      .sort((a, b) => b.createdAt - a.createdAt);
+    const target = cmd.text
+      ? pool.find((m) => m.text.includes(cmd.text as string))
+      : pool.find((m) => m.source === "explicit");
+    if (!target) {
+      await postAssistantMessage(channelId, "🧠 該当する記憶が見つかりませんでした。");
+      return true;
+    }
+    await memoryStore.delete(target.id);
+    await postAssistantMessage(channelId, `🧠 記憶を忘れました: ${target.text}`);
+    hub.publish(channelId, {
+      type: "memory",
+      action: "removed",
+      item: { id: target.id, text: target.text, scope: target.scope, kind: target.kind },
+    });
+    return true;
+  }
+
+  // remember
+  const text = cmd.text as string;
+  const embedding = await embedText(text);
+  const now = Date.now();
+  const item: MemoryItem = {
+    id: newId("mem"),
+    scope: cmd.scope,
+    channelId: cmd.scope === "channel" ? channelId : null,
+    kind: "fact",
+    text,
+    subject: null,
+    source: "explicit",
+    author: trigger.author,
+    embedding,
+    embeddingModel: embedding ? env.embedModel : null,
+    createdAt: now,
+    updatedAt: now,
+  };
+  await memoryStore.add(item);
+
+  const scopeLabel = cmd.scope === "global" ? "全体" : "このch";
+  await postAssistantMessage(channelId, `🧠 覚えました（${scopeLabel}）: ${text}`);
+  hub.publish(channelId, {
+    type: "memory",
+    action: "added",
+    item: { id: item.id, text: item.text, scope: item.scope, kind: item.kind },
+  });
   return true;
 }

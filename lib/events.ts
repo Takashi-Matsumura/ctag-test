@@ -1,3 +1,4 @@
+import type { MemoryKind, MemoryScope } from "@/lib/memory/types";
 import type { Message } from "@/lib/store/types";
 
 export type AssistantStatus = "idle" | "queued" | "thinking" | "streaming";
@@ -26,5 +27,11 @@ export type ChannelEvent =
   | { type: "presence"; participants: string[] }
   /** アンビエント（自発発言）モードの ON/OFF。 */
   | { type: "ambient"; enabled: boolean }
+  /** 記憶の追加/削除（トースト等の軽い通知用）。 */
+  | {
+      type: "memory";
+      action: "added" | "removed";
+      item: { id: string; text: string; scope: MemoryScope; kind: MemoryKind };
+    }
   /** 生成エラー等。 */
   | { type: "error"; message: string };

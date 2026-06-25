@@ -20,6 +20,9 @@
 # production
 /build
 
+# 記憶ストア（JSON 永続。コミットしない）
+/.data/
+
 # misc
 .DS_Store
 *.pem
