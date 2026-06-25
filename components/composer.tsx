@@ -50,7 +50,7 @@ export function Composer({
 
   // 候補: アシスタント + 自分以外の参加者。
   const allCandidates: Candidate[] = [
-    { insert: "assistant", desc: "🤖 アシスタントを呼び出す" },
+    { insert: "assistant", desc: "AIアシスタントを呼び出す" },
     ...participants
       .filter((p) => p !== selfName && p.toLowerCase() !== "assistant")
       .map((p) => ({ insert: p, desc: "参加者" })),
@@ -104,9 +104,9 @@ export function Composer({
   return (
     <div className="border-t border-black/10 dark:border-white/15">
       <p className="px-3 pt-2 text-xs opacity-50">
-        ヒント: <code className="rounded bg-black/[.06] px-1 dark:bg-white/[.12]">@</code>{" "}
-        を入力すると候補が出ます。<code className="rounded bg-black/[.06] px-1 dark:bg-white/[.12]">@assistant</code>{" "}
-        でアシスタントが応答します。
+        ヒント: <code className="rounded bg-black/[.06] px-1 dark:bg-white/[.12]">@</code> で候補表示。
+        <code className="rounded bg-black/[.06] px-1 dark:bg-white/[.12]">@assistant</code>{" "}
+        で AIアシスタントが応答します。
       </p>
       <form
         onSubmit={(e) => {

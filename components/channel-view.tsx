@@ -4,6 +4,7 @@ import { useCallback, useSyncExternalStore } from "react";
 import Link from "next/link";
 import type { Message } from "@/lib/store/types";
 import { useChannelStream } from "@/lib/client/use-channel-stream";
+import { SparkleIcon } from "@/components/avatars";
 import { Composer } from "@/components/composer";
 import { IdentityGate } from "@/components/identity-gate";
 import { MessageList } from "@/components/message-list";
@@ -88,13 +89,14 @@ function Room({
             <button
               onClick={toggleAmbient}
               title="アンビエント（自発発言）モード: ONにすると、@なしの会話が一段落したときにアシスタントが役立つと判断すれば自分から発言します"
-              className={`rounded-full border px-2.5 py-1 text-xs transition-colors ${
+              className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs transition-colors ${
                 state.ambient
-                  ? "border-green-500/40 bg-green-500/15 text-green-700 dark:text-green-300"
+                  ? "border-violet-500/40 bg-violet-500/15 text-violet-700 dark:text-violet-300"
                   : "border-black/15 opacity-60 hover:opacity-100 dark:border-white/20"
               }`}
             >
-              ✨ アンビエント: {state.ambient ? "ON" : "OFF"}
+              <SparkleIcon className="h-3 w-3" />
+              アンビエント: {state.ambient ? "ON" : "OFF"}
             </button>
             <button onClick={onChangeName} className="text-xs opacity-60 hover:underline">
               {identity} を変更
