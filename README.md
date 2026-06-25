@@ -43,6 +43,26 @@ Browser ◀──GET /events(SSE)── Hub（globalThis-pin の EventEmitter, c
 
 ランタイムは常駐 Node プロセス（`next dev` / `next start`）前提。Lambda ではないため SSE の長時間接続とプロセス内状態保持が成立します。
 
+## なぜ別のリアルタイムサーバが不要なのか
+
+一般的なチャットアプリは、リアルタイム通信のために WebSocket サーバ（Socket.IO 等）や Redis pub/sub を**別プロセスとして用意**します。本アプリにそれが無いのは、リアルタイムの役割が消えたからではなく、**Next.js を動かす Node プロセスの中に同居している**からです。鍵は「Next.js の魔法」ではなく **`next start` が“常駐し続ける1個の Node サーバ”である**という性質です。
+
+- **常駐サーバなので接続も状態も保持できる**: `next start` はリクエストごとに使い捨てられる Lambda ではなく、ずっと生きている HTTP サーバ。だから長時間接続を張りっぱなしにでき、会話履歴をメモリ上に保持できる。
+- **WebSocket ではなく SSE**: チャットの通信は実質「サーバ→全員へ配信」＋「クライアント→サーバへ1回 POST」で、完全な双方向は不要。配信は Route Handler が `ReadableStream` を返す **SSE**、送信は普通の **POST**。SSE は素の HTTP で動き、ブラウザの `EventSource` が自動再接続まで担う。
+- **配信バスはプロセス内の EventEmitter**: 全 SSE 接続が同じプロセスのメモリに居るので、配信仲介は **`channelId` をトピックにした Node 標準 `EventEmitter` 1個**（`lib/hub.ts`）で済む。これが Redis pub/sub の代わり。
+- **状態もメモリ上のオブジェクト**: 会話履歴は同プロセス内の `Map`（`lib/store/memory.ts`）。プロセスが生き続けるのでリクエストをまたいで共有される。
+
+→ つまり「接続保持(SSE)」と「配信バス(EventEmitter)」を**別サーバに切り出さず、Next.js の常駐 Node プロセスに同居**させているだけ。
+
+### 成立条件と限界
+
+この手軽さは **「Node プロセスが1個で、ずっと生きている」** という前提に依存します。**社内LAN・単一マシンの自前ホストはまさにこの前提に合致**するため非常に相性が良い一方、前提が崩れると従来どおり「別プロセス＋外部 pub/sub」が必要になります。
+
+- **サーバーレス（Vercel Functions / Lambda 等）では破綻**: 接続が時間で切れ、リクエストごとに別インスタンスへ振られ得る。インスタンス A の EventEmitter は B に繋いだクライアントへ届かない。→ 自前ホストの常駐 Node が前提。
+- **水平スケールでは破綻**: Node を複数立てるとプロセス内ハブはプロセス間をまたげない。→ Redis pub/sub 等での橋渡しが必要（＝従来構成に回帰）。
+- **再起動で状態消失**: 履歴はメモリのため。`ChannelStore` interface を差し替えれば永続化可能。
+- **接続数の上限**: 1プロセスで多数の SSE を保持。チーム/LAN 規模なら十分（補足: HTTP/1.1 は同一ドメインの SSE がタブ6本程度で頭打ち、HTTP/2 なら多重化で緩和）。
+
 ## 技術スタック
 
 - Next.js 16（App Router, Route Handler の `ReadableStream` で SSE）
