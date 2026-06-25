@@ -85,7 +85,7 @@ export function MessageList({
   }, [messages, streaming]);
 
   return (
-    <div className="flex flex-1 flex-col gap-4 overflow-y-auto p-4">
+    <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-4">
       {messages.map((m) => (
         <Bubble key={m.id} message={m} self={m.role === "user" && m.author === selfName} />
       ))}

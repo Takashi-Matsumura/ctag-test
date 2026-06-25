@@ -8,7 +8,7 @@ export default async function Home() {
   const channels = await store.listChannels();
 
   return (
-    <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 p-6">
+    <main className="mx-auto flex min-h-0 w-full max-w-2xl flex-1 flex-col gap-6 overflow-y-auto p-6">
       <header>
         <h1 className="text-2xl font-semibold">マルチプレイヤー・チャンネル</h1>
         <p className="mt-1 text-sm opacity-70">

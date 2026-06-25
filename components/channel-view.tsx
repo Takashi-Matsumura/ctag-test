@@ -76,8 +76,8 @@ function Room({
   }
 
   return (
-    <div className="flex flex-1 flex-col">
-      <header className="space-y-2 border-b border-black/10 p-4 dark:border-white/15">
+    <div className="flex min-h-0 flex-1 flex-col">
+      <header className="shrink-0 space-y-2 border-b border-black/10 p-4 dark:border-white/15">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-baseline gap-3">
             <Link href="/" className="text-sm opacity-60 hover:underline">
