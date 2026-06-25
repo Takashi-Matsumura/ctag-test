@@ -56,6 +56,15 @@ function Room({
 }) {
   const state = useChannelStream(channelId, identity, initialMessages);
 
+  // 記憶の追加/削除トースト。表示・自動消去は CSS アニメーションに委ね、
+  // key(memorySeq) の更新で要素を作り直して再生する（effect での setState を避ける）。
+  const notice = state.memoryNotice;
+  const toast = notice
+    ? notice.action === "added"
+      ? `🧠 覚えました: ${notice.text}`
+      : `🧠 忘れました: ${notice.text}`
+    : null;
+
   async function send(content: string) {
     const res = await fetch(`/api/channels/${channelId}/messages`, {
       method: "POST",
@@ -75,7 +84,17 @@ function Room({
   }
 
   return (
-    <div className="flex flex-1 flex-col">
+    <div className="relative flex flex-1 flex-col">
+      {toast && (
+        <div
+          key={state.memorySeq}
+          className="memory-toast pointer-events-none absolute left-1/2 top-3 z-10 -translate-x-1/2"
+        >
+          <p className="rounded-full border border-green-500/40 bg-green-500/15 px-4 py-1.5 text-sm text-green-700 shadow-sm dark:text-green-300">
+            {toast}
+          </p>
+        </div>
+      )}
       <header className="space-y-2 border-b border-black/10 p-4 dark:border-white/15">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-baseline gap-3">
