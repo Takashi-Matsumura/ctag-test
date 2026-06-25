@@ -1,10 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 export function Composer({ onSend }: { onSend: (content: string) => Promise<void> }) {
   const [text, setText] = useState("");
   const [pending, setPending] = useState(false);
+  // IME（日本語などの変換）中かどうか。変換確定の Enter を送信と区別する。
+  const composingRef = useRef(false);
 
   async function submit() {
     const content = text.trim();
@@ -34,9 +36,18 @@ export function Composer({ onSend }: { onSend: (content: string) => Promise<void
         <textarea
           value={text}
           onChange={(e) => setText(e.target.value)}
+          onCompositionStart={() => {
+            composingRef.current = true;
+          }}
+          onCompositionEnd={() => {
+            composingRef.current = false;
+          }}
           onKeyDown={(e) => {
             // Enter で送信、Shift+Enter で改行。
             if (e.key === "Enter" && !e.shiftKey) {
+              // IME 変換中（日本語変換の確定 Enter 等）は送信しない。
+              // nativeEvent.isComposing と composition フラグの両方で判定（ブラウザ差吸収）。
+              if (e.nativeEvent.isComposing || composingRef.current) return;
               e.preventDefault();
               void submit();
             }
