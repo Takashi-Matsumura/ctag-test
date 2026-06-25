@@ -2,7 +2,34 @@
 
 import { useEffect, useRef } from "react";
 import type { Message } from "@/lib/store/types";
+import { Markdown } from "@/components/markdown";
 import { StreamingBubble } from "@/components/streaming-bubble";
+import { MENTION_SPLIT_RE } from "@/lib/mention";
+
+function isMentionToken(s: string): boolean {
+  return /^@(?:assistant|ai|bot|アシスタント)$/iu.test(s);
+}
+
+/** ユーザー発話。@メンションを色付きで強調しつつプレーン表示。 */
+function MentionText({ content }: { content: string }) {
+  const parts = content.split(MENTION_SPLIT_RE);
+  return (
+    <span className="whitespace-pre-wrap">
+      {parts.map((part, i) =>
+        isMentionToken(part) ? (
+          <span
+            key={i}
+            className="rounded bg-blue-500/15 px-1 font-medium text-blue-600 dark:text-blue-300"
+          >
+            {part}
+          </span>
+        ) : (
+          <span key={i}>{part}</span>
+        ),
+      )}
+    </span>
+  );
+}
 
 function Bubble({ message, self }: { message: Message; self: boolean }) {
   const isAssistant = message.role === "assistant";
@@ -12,7 +39,7 @@ function Bubble({ message, self }: { message: Message; self: boolean }) {
         {isAssistant ? "🤖 assistant" : message.author}
       </span>
       <div
-        className={`max-w-[80%] whitespace-pre-wrap rounded-2xl px-3 py-2 text-sm ${
+        className={`max-w-[80%] rounded-2xl px-3 py-2 text-sm ${
           isAssistant
             ? "bg-black/[.06] dark:bg-white/[.10]"
             : self
@@ -20,7 +47,11 @@ function Bubble({ message, self }: { message: Message; self: boolean }) {
               : "bg-black/[.04] dark:bg-white/[.06]"
         }`}
       >
-        {message.content}
+        {isAssistant ? (
+          <Markdown>{message.content}</Markdown>
+        ) : (
+          <MentionText content={message.content} />
+        )}
       </div>
     </div>
   );

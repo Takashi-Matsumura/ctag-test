@@ -2,6 +2,7 @@ import { hub } from "@/lib/hub";
 import { newId } from "@/lib/ids";
 import { lock } from "@/lib/lock";
 import { runAssistantTurn } from "@/lib/llm/runner";
+import { mentionsAssistant } from "@/lib/mention";
 import { store } from "@/lib/store";
 import type { Message } from "@/lib/store/types";
 
@@ -57,11 +58,18 @@ export async function POST(
   await store.appendMessage(message);
   hub.publish(id, { type: "message", message });
 
-  // 2. アシスタントのターンを直列キューに積む。
-  //    既に生成中なら「順番待ち」を全員に通知。
-  if (lock.isBusy(id)) hub.setStatus(id, "queued");
-  // リクエストの寿命から切り離して背景実行（投稿者がタブを閉じても継続）。
-  void lock.run(id, () => runAssistantTurn(id));
+  // 2. @assistant 等で呼ばれたときだけアシスタントのターンを起動する。
+  //    呼ばれなければ人間同士の会話として配信のみ（アシスタントは黙っている）。
+  const triggered = mentionsAssistant(message.content);
+  if (triggered) {
+    // 既に生成中なら「順番待ち」を全員に通知。
+    if (lock.isBusy(id)) hub.setStatus(id, "queued");
+    // リクエストの寿命から切り離して背景実行（投稿者がタブを閉じても継続）。
+    void lock.run(id, () => runAssistantTurn(id));
+  }
 
-  return Response.json({ accepted: true, messageId: message.id }, { status: 202 });
+  return Response.json(
+    { accepted: true, messageId: message.id, triggeredAssistant: triggered },
+    { status: 202 },
+  );
 }
