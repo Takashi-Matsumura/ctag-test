@@ -1,13 +1,14 @@
 import { env } from "@/lib/env";
 import { MemoryChannelStore } from "@/lib/store/memory";
+import { SqliteChannelStore } from "@/lib/store/sqlite";
 import type { ChannelStore } from "@/lib/store/types";
 
 function createStore(): ChannelStore {
   switch (env.storeDriver) {
     case "memory":
       return new MemoryChannelStore();
-    // 将来: case "sqlite": return new SqliteChannelStore();
-    //       case "json":   return new JsonFileChannelStore();
+    case "sqlite":
+      return new SqliteChannelStore();
     default:
       throw new Error(`unknown STORE_DRIVER: ${env.storeDriver}`);
   }
