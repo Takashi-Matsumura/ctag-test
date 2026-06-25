@@ -4,7 +4,7 @@ import { useCallback, useSyncExternalStore } from "react";
 import Link from "next/link";
 import type { Message } from "@/lib/store/types";
 import { useChannelStream } from "@/lib/client/use-channel-stream";
-import { SparkleIcon } from "@/components/avatars";
+import { MemoryIcon, SparkleIcon } from "@/components/avatars";
 import { Composer } from "@/components/composer";
 import { IdentityGate } from "@/components/identity-gate";
 import { MemoryPanel } from "@/components/memory-panel";
@@ -63,8 +63,8 @@ function Room({
   const notice = state.memoryNotice;
   const toast = notice
     ? notice.action === "added"
-      ? `🧠 覚えました: ${notice.text}`
-      : `🧠 忘れました: ${notice.text}`
+      ? `覚えました: ${notice.text}`
+      : `忘れました: ${notice.text}`
     : null;
 
   async function send(content: string) {
@@ -93,7 +93,8 @@ function Room({
           key={state.memorySeq}
           className="memory-toast pointer-events-none absolute left-1/2 top-3 z-10 -translate-x-1/2"
         >
-          <p className="rounded-full border border-green-500/40 bg-green-500/15 px-4 py-1.5 text-sm text-green-700 shadow-sm dark:text-green-300">
+          <p className="flex items-center gap-1.5 rounded-full border border-green-500/40 bg-green-500/15 px-4 py-1.5 text-sm text-green-700 shadow-sm dark:text-green-300">
+            <MemoryIcon className="h-3.5 w-3.5" />
             {toast}
           </p>
         </div>

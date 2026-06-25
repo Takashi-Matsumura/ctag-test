@@ -187,11 +187,11 @@ async function handleMemoryCommand(channelId: string, trigger: Message): Promise
       ? pool.find((m) => m.text.includes(cmd.text as string))
       : pool.find((m) => m.source === "explicit");
     if (!target) {
-      await postAssistantMessage(channelId, "🧠 該当する記憶が見つかりませんでした。");
+      await postAssistantMessage(channelId, "📝 該当する記憶が見つかりませんでした。");
       return true;
     }
     await memoryStore.delete(target.id);
-    await postAssistantMessage(channelId, `🧠 記憶を忘れました: ${target.text}`);
+    await postAssistantMessage(channelId, `📝 記憶を忘れました: ${target.text}`);
     hub.publish(channelId, {
       type: "memory",
       action: "removed",
@@ -207,7 +207,7 @@ async function handleMemoryCommand(channelId: string, trigger: Message): Promise
   if (looksLikeInjection(text)) {
     await postAssistantMessage(
       channelId,
-      "🧠 すみません、アシスタントの振る舞いを変える指示は記憶できません。事実や決定事項として言い換えてもらえますか？",
+      "📝 すみません、アシスタントの振る舞いを変える指示は記憶できません。事実や決定事項として言い換えてもらえますか？",
     );
     return true;
   }
@@ -230,7 +230,7 @@ async function handleMemoryCommand(channelId: string, trigger: Message): Promise
   await memoryStore.add(item);
 
   const scopeLabel = cmd.scope === "global" ? "全体" : "このch";
-  await postAssistantMessage(channelId, `🧠 覚えました（${scopeLabel}）: ${text}`);
+  await postAssistantMessage(channelId, `📝 覚えました（${scopeLabel}）: ${text}`);
   hub.publish(channelId, {
     type: "memory",
     action: "added",

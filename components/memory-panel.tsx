@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { MemoryIcon } from "@/components/avatars";
 
 interface MemoryRow {
   id: string;
@@ -65,8 +66,9 @@ export function MemoryPanel({
   return (
     <aside className="flex w-80 min-h-0 shrink-0 flex-col border-l border-black/10 dark:border-white/15">
         <header className="flex items-center justify-between border-b border-black/10 p-4 dark:border-white/15">
-          <h2 className="text-sm font-semibold">
-            🧠 記憶{memories ? `（${memories.length}）` : ""}
+          <h2 className="flex items-center gap-1.5 text-sm font-semibold">
+            <MemoryIcon className="h-4 w-4 opacity-70" />
+            記憶{memories ? `（${memories.length}）` : ""}
           </h2>
         </header>
 
