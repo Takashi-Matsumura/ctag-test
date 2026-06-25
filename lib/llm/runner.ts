@@ -5,8 +5,11 @@ import { streamChat, type ChatMessage } from "@/lib/llm/client";
 import { embedText } from "@/lib/llm/embed";
 import { mockStream } from "@/lib/llm/mock";
 import { parseMemoryCommand } from "@/lib/memory/commands";
+import { scheduleExtraction } from "@/lib/memory/extract";
 import { memoryEnabled, memoryStore } from "@/lib/memory/index";
 import { recallForTurn } from "@/lib/memory/recall";
+import { looksLikeInjection, sanitizeMemoryText } from "@/lib/memory/sanitize";
+import { scheduleSummarize } from "@/lib/memory/summarize";
 import type { MemoryItem } from "@/lib/memory/types";
 import { store } from "@/lib/store";
 import type { Message } from "@/lib/store/types";
@@ -86,6 +89,14 @@ export async function runAssistantTurn(channelId: string): Promise<void> {
   hub.endStream(channelId);
   hub.publish(channelId, { type: "message", message });
   hub.setStatus(channelId, "idle", runId);
+
+  // 背景の学習ジョブ（応答配信はブロックしない）。
+  // - 自動抽出: extractEveryNTurns ごとに事実/好み/決定を抽出
+  // - 会話要約: 履歴が summaryThreshold を超えたらコンテキストを圧縮
+  if (memoryEnabled) {
+    scheduleExtraction(channelId);
+    scheduleSummarize(channelId);
+  }
 }
 
 const AMBIENT_SYSTEM_PROMPT =
@@ -190,7 +201,16 @@ async function handleMemoryCommand(channelId: string, trigger: Message): Promise
   }
 
   // remember
-  const text = cmd.text as string;
+  const text = sanitizeMemoryText(cmd.text as string);
+  if (!text) return false; // サニタイズ後に空なら通常応答に回す
+  // 記憶は将来 system へ注入されるため、アシスタントへの命令文は保存しない（永続的注入の防止）。
+  if (looksLikeInjection(text)) {
+    await postAssistantMessage(
+      channelId,
+      "🧠 すみません、アシスタントの振る舞いを変える指示は記憶できません。事実や決定事項として言い換えてもらえますか？",
+    );
+    return true;
+  }
   const embedding = await embedText(text);
   const now = Date.now();
   const item: MemoryItem = {
