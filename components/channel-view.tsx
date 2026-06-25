@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState, useSyncExternalStore } from "react";
+import { useCallback, useSyncExternalStore } from "react";
 import Link from "next/link";
 import type { Message } from "@/lib/store/types";
 import { useChannelStream } from "@/lib/client/use-channel-stream";
@@ -57,7 +57,6 @@ function Room({
   onChangeName: () => void;
 }) {
   const state = useChannelStream(channelId, identity, initialMessages);
-  const [showMemory, setShowMemory] = useState(false);
 
   // 記憶の追加/削除トースト。表示・自動消去は CSS アニメーションに委ね、
   // key(memorySeq) の更新で要素を作り直して再生する（effect での setState を避ける）。
@@ -87,7 +86,8 @@ function Room({
   }
 
   return (
-    <div className="relative flex min-h-0 flex-1 flex-col">
+    <div className="flex min-h-0 flex-1">
+      <div className="relative flex min-h-0 flex-1 flex-col">
       {toast && (
         <div
           key={state.memorySeq}
@@ -119,13 +119,6 @@ function Room({
               <SparkleIcon className="h-3 w-3" />
               アンビエント: {state.ambient ? "ON" : "OFF"}
             </button>
-            <button
-              onClick={() => setShowMemory(true)}
-              title="アシスタントが覚えているチームの事実・好み・決定の一覧。個別に削除できます"
-              className="inline-flex items-center gap-1 rounded-full border border-black/15 px-2.5 py-1 text-xs opacity-60 transition-colors hover:opacity-100 dark:border-white/20"
-            >
-              🧠 記憶
-            </button>
             <button onClick={onChangeName} className="text-xs opacity-60 hover:underline">
               {identity} を変更
             </button>
@@ -146,14 +139,10 @@ function Room({
 
       <MessageList messages={state.messages} streaming={state.streaming} selfName={identity} />
       <Composer onSend={send} participants={state.participants} selfName={identity} />
+      </div>
 
-      {showMemory && (
-        <MemoryPanel
-          channelId={channelId}
-          refreshKey={state.memorySeq}
-          onClose={() => setShowMemory(false)}
-        />
-      )}
+      {/* 記憶サイドバー（チャット右側に常時表示） */}
+      <MemoryPanel channelId={channelId} refreshKey={state.memorySeq} />
     </div>
   );
 }

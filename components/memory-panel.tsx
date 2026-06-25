@@ -26,18 +26,16 @@ const SOURCE_LABEL: Record<MemoryRow["source"], string> = {
 };
 
 /**
- * 記憶パネル（右ドロワー）。一覧表示と削除のみ。
+ * 記憶サイドバー（チャット右側に常時表示）。一覧表示と削除のみ。
  * - 取得は REST（GET）。記憶イベントで増減したら refreshKey を変えて再取得する。
  * - 削除は DELETE。反映は SSE の memory イベント→refreshKey 更新で再取得（サーバが唯一の真実）。
  */
 export function MemoryPanel({
   channelId,
   refreshKey,
-  onClose,
 }: {
   channelId: string;
   refreshKey: number;
-  onClose: () => void;
 }) {
   const [memories, setMemories] = useState<MemoryRow[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -65,19 +63,11 @@ export function MemoryPanel({
   }
 
   return (
-    <div className="fixed inset-0 z-30 flex justify-end">
-      {/* 背景クリックで閉じる */}
-      <button
-        aria-label="閉じる"
-        onClick={onClose}
-        className="flex-1 cursor-default bg-black/20"
-      />
-      <aside className="flex h-full w-80 max-w-[85vw] flex-col border-l border-black/10 bg-[var(--background)] shadow-xl dark:border-white/15">
+    <aside className="flex w-80 min-h-0 shrink-0 flex-col border-l border-black/10 dark:border-white/15">
         <header className="flex items-center justify-between border-b border-black/10 p-4 dark:border-white/15">
-          <h2 className="text-sm font-semibold">🧠 記憶</h2>
-          <button onClick={onClose} className="text-sm opacity-60 hover:opacity-100">
-            閉じる
-          </button>
+          <h2 className="text-sm font-semibold">
+            🧠 記憶{memories ? `（${memories.length}）` : ""}
+          </h2>
         </header>
 
         <div className="min-h-0 flex-1 overflow-y-auto p-3">
@@ -116,7 +106,7 @@ export function MemoryPanel({
                   <button
                     onClick={() => remove(m.id)}
                     title="この記憶を忘れる"
-                    className="ml-auto rounded px-1 text-red-600 opacity-0 transition-opacity hover:bg-red-500/10 group-hover:opacity-100 dark:text-red-400"
+                    className="ml-auto rounded px-1 text-red-600 opacity-50 transition-opacity hover:bg-red-500/10 group-hover:opacity-100 dark:text-red-400"
                   >
                     削除
                   </button>
@@ -129,7 +119,6 @@ export function MemoryPanel({
             ))}
           </ul>
         </div>
-      </aside>
-    </div>
+    </aside>
   );
 }
