@@ -71,7 +71,7 @@ function reducer(state: StreamState, action: Action): StreamState {
   }
 }
 
-const EVENT_TYPES = ["snapshot", "message", "token", "state", "presence", "error"] as const;
+const EVENT_TYPES = ["snapshot", "message", "token", "state", "presence", "ambient", "error"] as const;
 
 /**
  * チャンネルの SSE を購読し、単方向イベントから単一 state を構築する。
