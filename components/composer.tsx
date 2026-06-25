@@ -103,6 +103,7 @@ export function Composer({
 
   return (
     <div className="shrink-0 border-t border-black/10 dark:border-white/15">
+      <div className="mx-auto w-2/3">
       <p className="px-3 pt-2 text-xs opacity-50">
         ヒント: <code className="rounded bg-black/[.06] px-1 dark:bg-white/[.12]">@</code> で候補表示。
         <code className="rounded bg-black/[.06] px-1 dark:bg-white/[.12]">@assistant</code>{" "}
@@ -193,6 +194,7 @@ export function Composer({
           {pending ? "送信中" : "送信"}
         </button>
       </form>
+      </div>
     </div>
   );
 }

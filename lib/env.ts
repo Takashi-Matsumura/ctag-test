@@ -18,8 +18,10 @@ export const env = {
    * 厳格な OpenAI 互換サーバ（未知パラメータを 400 にする）では "0" にして無効化。
    */
   llmNoThink: (process.env.LLM_NO_THINK ?? "1") !== "0",
-  /** v1 は "memory" のみ。後で "sqlite" / "json" を足せる。 */
+  /** "memory"(揮発・既定) / "sqlite"(永続化)。 */
   storeDriver: process.env.STORE_DRIVER ?? "memory",
+  /** SQLite ドライバの保存先（cwd 相対）。 */
+  storeFile: process.env.STORE_FILE ?? ".data/channels.db",
 
   // --- 記憶ストア ---
   /** "json"(既定・永続) / "memory"(揮発) / "off"(記憶機能を完全無効化)。 */
