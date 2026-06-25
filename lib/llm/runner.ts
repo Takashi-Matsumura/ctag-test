@@ -8,6 +8,7 @@ import { parseMemoryCommand } from "@/lib/memory/commands";
 import { scheduleExtraction } from "@/lib/memory/extract";
 import { memoryEnabled, memoryStore } from "@/lib/memory/index";
 import { recallForTurn } from "@/lib/memory/recall";
+import { looksLikeInjection, sanitizeMemoryText } from "@/lib/memory/sanitize";
 import { scheduleSummarize } from "@/lib/memory/summarize";
 import type { MemoryItem } from "@/lib/memory/types";
 import { store } from "@/lib/store";
@@ -200,7 +201,16 @@ async function handleMemoryCommand(channelId: string, trigger: Message): Promise
   }
 
   // remember
-  const text = cmd.text as string;
+  const text = sanitizeMemoryText(cmd.text as string);
+  if (!text) return false; // サニタイズ後に空なら通常応答に回す
+  // 記憶は将来 system へ注入されるため、アシスタントへの命令文は保存しない（永続的注入の防止）。
+  if (looksLikeInjection(text)) {
+    await postAssistantMessage(
+      channelId,
+      "🧠 すみません、アシスタントの振る舞いを変える指示は記憶できません。事実や決定事項として言い換えてもらえますか？",
+    );
+    return true;
+  }
   const embedding = await embedText(text);
   const now = Date.now();
   const item: MemoryItem = {
