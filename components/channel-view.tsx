@@ -65,6 +65,15 @@ function Room({
     if (!res.ok) throw new Error(`送信に失敗しました (${res.status})`);
   }
 
+  async function toggleAmbient() {
+    // 反映は SSE の ambient イベント経由（サーバが唯一の真実）。
+    await fetch(`/api/channels/${channelId}/ambient`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ enabled: !state.ambient }),
+    });
+  }
+
   return (
     <div className="flex flex-1 flex-col">
       <header className="space-y-2 border-b border-black/10 p-4 dark:border-white/15">
@@ -75,9 +84,22 @@ function Room({
             </Link>
             <h1 className="text-lg font-semibold">#{channelName}</h1>
           </div>
-          <button onClick={onChangeName} className="text-xs opacity-60 hover:underline">
-            {identity} を変更
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={toggleAmbient}
+              title="アンビエント（自発発言）モード: ONにすると、@なしの会話が一段落したときにアシスタントが役立つと判断すれば自分から発言します"
+              className={`rounded-full border px-2.5 py-1 text-xs transition-colors ${
+                state.ambient
+                  ? "border-green-500/40 bg-green-500/15 text-green-700 dark:text-green-300"
+                  : "border-black/15 opacity-60 hover:opacity-100 dark:border-white/20"
+              }`}
+            >
+              ✨ アンビエント: {state.ambient ? "ON" : "OFF"}
+            </button>
+            <button onClick={onChangeName} className="text-xs opacity-60 hover:underline">
+              {identity} を変更
+            </button>
+          </div>
         </div>
         <PresenceBar
           participants={state.participants}

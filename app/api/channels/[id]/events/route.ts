@@ -1,3 +1,4 @@
+import { ambient } from "@/lib/ambient";
 import { hub } from "@/lib/hub";
 import { newId } from "@/lib/ids";
 import type { ChannelEvent } from "@/lib/events";
@@ -55,6 +56,7 @@ export async function GET(
           streaming: live.streaming,
           status: live.status,
           participants: hub.participants(id),
+          ambient: ambient.isEnabled(id),
         }),
       );
 

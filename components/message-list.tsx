@@ -37,6 +37,11 @@ function Bubble({ message, self }: { message: Message; self: boolean }) {
     <div className={`flex flex-col ${self ? "items-end" : "items-start"}`}>
       <span className="px-1 text-xs opacity-60">
         {isAssistant ? "🤖 assistant" : message.author}
+        {message.ambient && (
+          <span className="ml-1 rounded bg-green-500/15 px-1 text-green-700 dark:text-green-300">
+            ✨ 自発
+          </span>
+        )}
       </span>
       <div
         className={`max-w-[80%] rounded-2xl px-3 py-2 text-sm ${
