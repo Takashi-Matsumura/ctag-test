@@ -7,7 +7,7 @@ import { StreamingBubble } from "@/components/streaming-bubble";
 import { MENTION_SPLIT_RE } from "@/lib/mention";
 
 function isMentionToken(s: string): boolean {
-  return /^@(?:assistant|ai|bot|アシスタント)$/iu.test(s);
+  return /^[@＠](?:assistant|ai|bot|アシスタント)$/iu.test(s);
 }
 
 /** ユーザー発話。@メンションを色付きで強調しつつプレーン表示。 */

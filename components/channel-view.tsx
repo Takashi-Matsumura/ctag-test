@@ -93,7 +93,7 @@ function Room({
       )}
 
       <MessageList messages={state.messages} streaming={state.streaming} selfName={identity} />
-      <Composer onSend={send} />
+      <Composer onSend={send} participants={state.participants} selfName={identity} />
     </div>
   );
 }
