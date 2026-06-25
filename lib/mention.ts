@@ -4,7 +4,8 @@
  *（＝Claude Tag の「タグ付けして呼ぶ」挙動）。
  * 後続が英数字のときは弾く（@airport が @ai に誤マッチしないように）。
  */
-const MENTION_RE = /@(assistant|ai|bot|アシスタント)(?![a-z0-9])/iu;
+// 半角 @ と全角 ＠ の両方をトリガとして許可する。
+const MENTION_RE = /[@＠](assistant|ai|bot|アシスタント)(?![a-z0-9])/iu;
 
 /** UI 表示やヒントで使う代表メンション。 */
 export const ASSISTANT_MENTION = "@assistant";
@@ -14,4 +15,4 @@ export function mentionsAssistant(content: string): boolean {
 }
 
 /** メンション強調表示のための分割用（マッチ部分を保持して split）。 */
-export const MENTION_SPLIT_RE = /(@(?:assistant|ai|bot|アシスタント)(?![a-z0-9]))/giu;
+export const MENTION_SPLIT_RE = /([@＠](?:assistant|ai|bot|アシスタント)(?![a-z0-9]))/giu;
